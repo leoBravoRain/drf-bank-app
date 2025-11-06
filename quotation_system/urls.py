@@ -23,4 +23,7 @@ urlpatterns = [
     
     # user app
     path('api/users/', include('quotation_system.users.urls')),
+    
+    # account app
+    path('api/accounts/', include('quotation_system.accounts.urls')),
 ]
