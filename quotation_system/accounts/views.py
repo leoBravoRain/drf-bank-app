@@ -1,3 +1,3 @@
 from django.shortcuts import render
 
-# Create your views here.
+# create a new account
