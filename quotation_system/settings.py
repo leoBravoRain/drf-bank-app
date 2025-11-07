@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'quotation_system.users',
     'quotation_system.accounts',
+    'quotation_system.transactions',
 ]
 
 MIDDLEWARE = [
