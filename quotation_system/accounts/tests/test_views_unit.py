@@ -23,6 +23,7 @@ def view():
     """Provides a AccountListView instance."""
     return AccountListView()
 
+@pytest.mark.unit
 def test_perform_create_sets_user_and_zero_balance(api_factory, user, view):
     """Test that the perform_create method sets the user and zero balance."""
     #  arrange
@@ -41,6 +42,7 @@ def test_perform_create_sets_user_and_zero_balance(api_factory, user, view):
     serializer.save.assert_called_once()
     serializer.save.assert_called_once_with(user=user, balance=0)
     
+@pytest.mark.unit
 def test_get_queryset_returns_accounts_for_the_user(api_factory, user, view, mocker):
     # Arrange
     mock_filter = mocker.patch('quotation_system.accounts.views.Account.objects.filter')
