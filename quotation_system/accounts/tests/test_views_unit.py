@@ -32,8 +32,8 @@ def test_perform_create_sets_user_and_zero_balance(api_factory, user, view):
     
     # create a serializer object instead of using the real serializer
     # creates a mock that enforces the interface of AccountSerializer
-    serializer = create_autospec(AccountSerializer, instance=True)
-    
+    serializer = MagicMock(spec=AccountSerializer)
+        
     # act
     view.perform_create(serializer)
     
