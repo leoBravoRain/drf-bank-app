@@ -3,7 +3,9 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
 from quotation_system.accounts.models import Account
+import pytest   
 
+@pytest.mark.integration
 class TestAccountViewsIntegration(APITestCase):
     """
     Test the Account views integration.

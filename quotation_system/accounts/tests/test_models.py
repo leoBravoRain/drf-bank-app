@@ -1,7 +1,9 @@
+import pytest
 from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
 from quotation_system.accounts.models import Account
 
+@pytest.mark.integration
 class TestAccountModel(APITestCase):
     """
     Test the Account model.
