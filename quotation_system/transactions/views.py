@@ -44,6 +44,10 @@ class TransactionListView(generics.ListCreateAPIView):
         # if it's a withdrawal, decrease balance
         elif transaction_type == Transaction.TRANSACTION_TYPES[1][0]:
             
+            # check if account has enough balance
+            if account.balance < serializer.validated_data['amount']:
+                raise serializers.ValidationError("Insufficient balance")
+            
             # update transaction previous and new balance
             serializer.validated_data['previous_balance'] = account.balance 
             
