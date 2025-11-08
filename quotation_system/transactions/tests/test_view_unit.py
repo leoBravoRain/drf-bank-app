@@ -6,7 +6,6 @@ from quotation_system.transactions.models import Transaction
 from quotation_system.transactions.serializers import TransactionSerializer
 from unittest.mock import create_autospec
 from quotation_system.accounts.models import Account
-from rest_framework.request import Request
 
 # fixtures
 @pytest.fixture
@@ -51,42 +50,51 @@ def test_perform_create_sets_user_and_update_account_balance(api_factory, user, 
     
     # arrange
     
+    data = {
+        "transaction_type": Transaction.TRANSACTION_TYPES[0][0],
+        "account": 1,
+        "amount": 100,
+        "currency": "USD",
+    }
     # create request obejct
-    request = Request(api_factory.post(
-        "/", 
-        {
-        # set as deposit
-        'transaction_type': Transaction.TRANSACTION_TYPES[0][0],
-        'account': 1,
-        'amount': 100,
-        'currency': 'USD',
-        }
-    ))
+    request =api_factory.post(
+        "/",
+        data,
+        format="json",
+    )
     request.user = user
-    view.request = request
+    view.request = view.initialize_request(request)
     
     # mock get account
     mock_get_account = mocker.patch('quotation_system.transactions.views.Account.objects.get')
     
     # define account
     account = MagicMock(spec=Account)
-    account.id = 1
-    account.account_number = 1
-    account.currency = 'USD'
     account.balance = 0
-    account.user = user
+    account.id = 1
     
+    # assign the account ot the returned vallue of the Account.objects.get() mock
     mock_get_account.return_value = account
     
     # create serializer object
     serializer = create_autospec(TransactionSerializer, instance=True)
+    serializer.validated_data = {
+        "amount": data['amount'],
+    }
     
     # act
     view.perform_create(serializer)
     
     # assert
-    # TODO: complemte more assertions
     serializer.save.assert_called_once()
+    account.save.assert_called_once()
+    
+    # check balance was updated
+    assert account.balance == data['amount']
+    assert serializer.validated_data['previous_balance'] == 0
+    assert serializer.validated_data['new_balance'] == data['amount']
+
+    
     
     
     
