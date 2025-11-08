@@ -178,5 +178,50 @@ def test_perform_create_with_invalid_transaction_type(api_factory, user, view, m
 
     mock_get_account.assert_called_once_with(user=user, pk=data["account"])
     serializer.save.assert_not_called()
+    
+@pytest.mark.unit
+def test_perform_create_withdrawal_with_not_enough_balance(api_factory, user, view, mocker):
+    
+    # arrange
+    transaction_amount = 100
+    account_balance = 50
+    
+    data = {
+        "transaction_type": Transaction.TRANSACTION_TYPES[1][0],
+        "account": 1,
+        "amount": transaction_amount,
+        "currency": "USD",
+    }
+    
+    request = api_factory.post("/", data, format="json")
+    view.request = view.initialize_request(request)
+    view.request.user = user  # assign after initialize_request
+    
+    # mock get account
+    mock_get_account = mocker.patch('quotation_system.transactions.views.Account.objects.get')
+    
+    # define account
+    account = MagicMock(spec=Account)
+    account.balance = account_balance
+    account.id = 1
+    
+    # assign the account ot the returned vallue of the Account.objects.get() mock
+    mock_get_account.return_value = account
+    
+     # create serializer object
+    serializer = create_autospec(TransactionSerializer, instance=True)
+    serializer.validated_data = {
+        "amount": data['amount'],
+    }
+    
+    # act
+    with pytest.raises(serializers.ValidationError) as e:
+        view.perform_create(serializer)
+    
+    # assert
+    assert e.value.detail[0] == "Insufficient balance"
+    assert serializer.save.call_count == 0
+    assert account.save.call_count == 0
+    
         
         
