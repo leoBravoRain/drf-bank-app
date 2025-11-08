@@ -6,6 +6,7 @@ from quotation_system.transactions.models import Transaction
 from quotation_system.transactions.serializers import TransactionSerializer
 from unittest.mock import create_autospec
 from quotation_system.accounts.models import Account
+from rest_framework import serializers
 
 # fixtures
 @pytest.fixture
@@ -46,14 +47,16 @@ def test_get_queryset_returns_transactions_filtered_by_user(api_factory, user, v
     mock_filter.assert_called_once_with(user=user)
     
 @pytest.mark.unit
-def test_perform_create_sets_user_and_update_account_balance(api_factory, user, view, mocker):
+def test_perform_create_deposit_sets_user_and_update_account_balance(api_factory, user, view, mocker):
     
     # arrange
+    transaction_amount = 100
+    account_balance = 0
     
     data = {
         "transaction_type": Transaction.TRANSACTION_TYPES[0][0],
         "account": 1,
-        "amount": 100,
+        "amount": transaction_amount,
         "currency": "USD",
     }
     # create request obejct
@@ -70,7 +73,7 @@ def test_perform_create_sets_user_and_update_account_balance(api_factory, user, 
     
     # define account
     account = MagicMock(spec=Account)
-    account.balance = 0
+    account.balance = account_balance
     account.id = 1
     
     # assign the account ot the returned vallue of the Account.objects.get() mock
@@ -91,11 +94,89 @@ def test_perform_create_sets_user_and_update_account_balance(api_factory, user, 
     
     # check balance was updated
     assert account.balance == data['amount']
-    assert serializer.validated_data['previous_balance'] == 0
-    assert serializer.validated_data['new_balance'] == data['amount']
+    assert serializer.validated_data['previous_balance'] == account_balance
+    assert serializer.validated_data['new_balance'] == account_balance + transaction_amount
+    
 
+@pytest.mark.unit
+def test_perform_create_withdrawal_sets_user_and_update_account_balance(api_factory, user, view, mocker):
     
+    # arrange
+    transaction_amount = 50
+    account_balance = 100
     
+    data = {
+        "transaction_type": Transaction.TRANSACTION_TYPES[1][0],
+        "account": 1,
+        "amount": transaction_amount,
+        "currency": "USD",
+    }
+    # create request obejct
+    request =api_factory.post(
+        "/",
+        data,
+        format="json",
+    )
+    request.user = user
+    view.request = view.initialize_request(request)
     
+    # mock get account
+    mock_get_account = mocker.patch('quotation_system.transactions.views.Account.objects.get')
     
+    # define account
+    account = MagicMock(spec=Account)
+    account.balance = account_balance
+    account.id = 1
     
+    # assign the account ot the returned vallue of the Account.objects.get() mock
+    mock_get_account.return_value = account
+    
+    # create serializer object
+    serializer = create_autospec(TransactionSerializer, instance=True)
+    serializer.validated_data = {
+        "amount": data['amount'],
+    }
+    
+    # act
+    view.perform_create(serializer)
+    
+    # assert
+    assert serializer.save.call_count == 1
+    assert account.save.call_count == 1
+    
+    # check balance was updated
+    assert account.balance == data['amount']
+    assert serializer.validated_data['previous_balance'] == account_balance
+    assert serializer.validated_data['new_balance'] == account_balance - transaction_amount
+    
+
+@pytest.mark.unit
+def test_perform_create_with_invalid_transaction_type(api_factory, user, view, mocker):
+    
+    # # arrange
+    data = {
+        "transaction_type": "invalid_transaction_type",
+        "account": 1,
+        "amount": 100,
+        "currency": "USD",
+    }
+
+    request = api_factory.post("/", data, format="json")
+    view.request = view.initialize_request(request)
+    view.request.user = user  # assign after initialize_request
+
+    mock_get_account = mocker.patch(
+        "quotation_system.transactions.views.Account.objects.get",
+        return_value=MagicMock(spec=Account),
+    )
+
+    serializer = create_autospec(TransactionSerializer, instance=True)
+    serializer.validated_data = {"amount": data["amount"]}
+
+    with pytest.raises(serializers.ValidationError):
+        view.perform_create(serializer)
+
+    mock_get_account.assert_called_once_with(user=user, pk=data["account"])
+    serializer.save.assert_not_called()
+        
+        
