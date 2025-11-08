@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator
+
 class Transaction(models.Model):
     TRANSACTION_TYPES = [
         ('deposit', 'Deposit'),
@@ -9,7 +11,7 @@ class Transaction(models.Model):
     account = models.ForeignKey('accounts.Account', on_delete=models.CASCADE, related_name='transactions')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transactions')
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     currency = models.CharField(max_length=3)
     previous_balance = models.DecimalField(max_digits=10, decimal_places=2)
     new_balance = models.DecimalField(max_digits=10, decimal_places=2)

@@ -26,4 +26,7 @@ urlpatterns = [
     
     # account app
     path('api/accounts/', include('quotation_system.accounts.urls')),
+    
+    # transaction app
+    path('api/transactions/', include('quotation_system.transactions.urls')),
 ]
