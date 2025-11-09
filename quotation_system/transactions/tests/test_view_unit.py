@@ -1,6 +1,6 @@
 import pytest
 from rest_framework.test import APIRequestFactory
-from quotation_system.transactions.views import TransactionListView
+from quotation_system.transactions.views import TransactionListView, TransactionDetailView
 from unittest.mock import MagicMock
 from quotation_system.transactions.models import Transaction
 from quotation_system.transactions.serializers import TransactionSerializer
@@ -25,6 +25,11 @@ def user():
 def view():
     """Provides a AccountListView instance."""
     return TransactionListView()
+
+@pytest.fixture
+def detail_view():
+    """Provides a TransactionDetailView instance."""
+    return TransactionDetailView()
 
 @pytest.mark.unit
 def test_get_queryset_returns_transactions_filtered_by_user(api_factory, user, view, mocker):
@@ -223,5 +228,28 @@ def test_perform_create_withdrawal_with_not_enough_balance(api_factory, user, vi
     assert serializer.save.call_count == 0
     assert account.save.call_count == 0
     
-        
-        
+
+@pytest.mark.unit
+def test_get_object_returns_transaction(api_factory, user, detail_view, mocker):
+    
+    """
+    Test to get a transaction by its id
+    """
+   # Arrange
+    mock_transaction = MagicMock(spec=Transaction, instance=True)
+    mock_get = mocker.patch(
+        "quotation_system.transactions.views.Transaction.objects.get",
+        return_value=mock_transaction,
+    )
+
+    request = api_factory.get("/")
+    detail_view.request = detail_view.initialize_request(request)
+    detail_view.request.user = user
+    detail_view.kwargs = {"pk": 1}
+
+    # Act
+    result = detail_view.get_object()
+
+    # Assert
+    mock_get.assert_called_once_with(user=user, pk=1)
+    assert result == mock_transaction

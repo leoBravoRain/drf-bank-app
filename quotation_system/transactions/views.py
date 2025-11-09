@@ -66,6 +66,13 @@ class TransactionListView(generics.ListCreateAPIView):
         # create transaction
         serializer.save()
         
+class TransactionDetailView(generics.RetrieveAPIView):
+    
+    serializer_class = TransactionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_object(self):
+        return Transaction.objects.get(user=self.request.user, pk=self.kwargs['pk'])
         
         
         
