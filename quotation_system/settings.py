@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'quotation_system.users',
     'quotation_system.accounts',
     'quotation_system.transactions',
+    'quotation_system.currencies'
 ]
 
 MIDDLEWARE = [
