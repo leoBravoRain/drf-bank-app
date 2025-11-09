@@ -6,9 +6,10 @@ class Transaction(models.Model):
     TRANSACTION_TYPES = [
         ('deposit', 'Deposit'),
         ('withdrawal', 'Withdrawal'),
-        # ('transfer', 'Transfer'),
+        ('transfer', 'Transfer'),
     ]
     account = models.ForeignKey('accounts.Account', on_delete=models.CASCADE, related_name='transactions')
+    related_account = models.ForeignKey('accounts.Account', null=True, on_delete=models.CASCADE, related_name='related_account')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transactions')
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
     amount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])

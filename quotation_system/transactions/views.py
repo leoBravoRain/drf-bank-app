@@ -57,6 +57,33 @@ class TransactionListView(generics.ListCreateAPIView):
             # update transaction new balance
             serializer.validated_data['new_balance'] = account.balance
             
+        # transfer funds to another account
+        elif transaction_type == Transaction.TRANSACTION_TYPES[2][0]:
+            
+            # check if related_account is defined
+            if not self.request.data['related_account']:
+                raise serializers.ValidationError(f"Related account must be defined in a ${transaction_type} transaction. This is the receiver account.")
+            
+            # get receiver account
+            receiver_account = Account.objects.get(user=user, pk=self.request.data['related_account'])
+            
+            # check if sender account has enough balance
+            if account.balance < serializer.validated_data['amount']:
+                raise serializers.ValidationError("Insufficient balance")
+            
+            # update transaction previous and new balance
+            serializer.validated_data['previous_balance'] = account.balance 
+            
+            # update account balance
+            account.balance -= serializer.validated_data['amount']
+            
+            # update receiver account balance
+            receiver_account.balance += serializer.validated_data['amount']
+            
+            # update transaction new balance
+            serializer.validated_data['new_balance'] = account.balance
+            
+            
         else:
             raise serializers.ValidationError("Invalid transaction type")
         
@@ -66,6 +93,9 @@ class TransactionListView(generics.ListCreateAPIView):
         # create transaction
         serializer.save()
         
+        # update receviver 
+        if transaction_type == Transaction.TRANSACTION_TYPES[2][0]:
+            receiver_account.save()
 class TransactionDetailView(generics.RetrieveAPIView):
     
     serializer_class = TransactionSerializer
