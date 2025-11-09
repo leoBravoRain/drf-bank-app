@@ -61,8 +61,8 @@ class TransactionListView(generics.ListCreateAPIView):
         elif transaction_type == Transaction.TRANSACTION_TYPES[2][0]:
             
             # check if related_account is defined
-            if not self.request.data['related_account']:
-                raise serializers.ValidationError(f"Related account must be defined in a ${transaction_type} transaction. This is the receiver account.")
+            if not self.request.data.get('related_account'):
+                raise serializers.ValidationError("Related account must be defined")
             
             # get receiver account
             receiver_account = Account.objects.get(user=user, pk=self.request.data['related_account'])
