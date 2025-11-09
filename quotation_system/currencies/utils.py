@@ -5,7 +5,7 @@ def convert_amount(amount, from_currency, to_currency):
     Utility method to conver amount from currenct from_currency to to_currency
     """    
     if from_currency == to_currency:
-        amount
+        return amount
     try:
         # return rate
         rate = CurrencyRate.objects.get(
