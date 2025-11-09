@@ -154,6 +154,71 @@ def test_perform_create_withdrawal_sets_user_and_update_account_balance(api_fact
     assert serializer.validated_data['previous_balance'] == account_balance
     assert serializer.validated_data['new_balance'] == account_balance - transaction_amount
     
+@pytest.mark.unit
+def test_perform_create_transfer_sets_user_and_update_account_balance(api_factory, user, view, mocker):
+    
+    # arrange
+    transaction_amount = 50
+    initial_sender_balance = 100
+    initial_receiver_balance = 0
+    
+    data = {
+        "transaction_type": Transaction.TRANSACTION_TYPES[2][0],
+        "account": 1,
+        "amount": transaction_amount,
+        "currency": "USD",
+        "related_account": 2
+    }
+    # create request obejct
+    request =api_factory.post(
+        "/",
+        data,
+        format="json",
+    )
+    view.request = view.initialize_request(request)
+    view.request.user = user
+    
+     # define mock account
+    sender_account = MagicMock(spec=Account, balance = initial_sender_balance, id = 1)
+    receiver_account = MagicMock(spec=Account, balance = initial_receiver_balance, id = 2)
+    
+    # mock get account
+    mock_get = mocker.patch(
+        "quotation_system.transactions.views.Account.objects.get",
+        side_effect=lambda **kwargs: sender_account if kwargs['pk'] == sender_account.id else receiver_account
+    )
+
+    # create serializer object
+    serializer = create_autospec(TransactionSerializer, instance=True)
+    serializer.validated_data = {
+        "amount": data['amount'],
+    }
+    
+    # act
+    view.perform_create(serializer)
+    
+    # Assert - ensure Account.objects.get called twice with correct params
+    expected_calls = [
+        mocker.call(user=user, pk=sender_account.id),
+        mocker.call(user=user, pk=receiver_account.id),
+    ]
+    mock_get.assert_has_calls(expected_calls)
+    
+    # assert serializer was called one time
+    assert serializer.save.call_count == 1
+
+    new_sender_balance = initial_sender_balance - data['amount']
+    
+    # assert balances updating
+    assert sender_account.balance == new_sender_balance
+    assert receiver_account.balance == initial_receiver_balance + data['amount']
+    
+    # asserting transactinos sreialiaer balances
+    assert serializer.validated_data['amount'] == data['amount']
+    assert serializer.validated_data['previous_balance'] == initial_sender_balance
+    assert serializer.validated_data['new_balance'] == new_sender_balance
+    
+    
 
 @pytest.mark.unit
 def test_perform_create_with_invalid_transaction_type(api_factory, user, view, mocker):
@@ -253,3 +318,4 @@ def test_get_object_returns_transaction(api_factory, user, detail_view, mocker):
     # Assert
     mock_get.assert_called_once_with(user=user, pk=1)
     assert result == mock_transaction
+    
