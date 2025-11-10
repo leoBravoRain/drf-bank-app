@@ -123,10 +123,3 @@ class TransactionDetailView(generics.RetrieveAPIView):
     
     def get_object(self):
         return Transaction.objects.get(user=self.request.user, pk=self.kwargs['pk'])
-        
-        
-        
-        
-        
-        
-
