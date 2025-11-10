@@ -7,13 +7,14 @@ def convert_amount(amount, from_currency, to_currency):
     if from_currency == to_currency:
         return amount
     try:
+
         # return rate
         rate = CurrencyRate.objects.get(
-            base_currency = from_currency,
-            target_currency = to_currency
+            base_currency__code = from_currency,
+            target_currency__code = to_currency
         ).rate
         
-        return amount*rate
+        return amount/rate
         
     except CurrencyRate.DoesNotExist:
         raise ValueError('Exchange rate not available')

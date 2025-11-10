@@ -7,12 +7,12 @@ def test_convert_amount_with_correct_input_data(mocker):
     # arrange
     
     # define basic params
-    amount = 10
-    from_currency = 'USD'
-    to_currency = 'CLP'
+    amount = 941.86
+    from_currency = 'CLP'
+    to_currency = 'USD'
     
     # mock currency rate
-    currency_rate = 900
+    currency_rate = 941.86
     
     # mock db call
     mock_get = mocker.patch('quotation_system.currencies.utils.CurrencyRate.objects.get')
@@ -25,10 +25,10 @@ def test_convert_amount_with_correct_input_data(mocker):
     
     # assert mock was called
     mock_get.assert_called_once()
-    mock_get.assert_called_once_with(base_currency=from_currency, target_currency=to_currency)
+    mock_get.assert_called_once_with(base_currency__code=from_currency, target_currency__code=to_currency)
     
     # assert currency change
-    assert result == amount * currency_rate 
+    assert result == amount / currency_rate 
     
     
 @pytest.mark.unit
@@ -72,7 +72,7 @@ def test_convert_amount_no_currency_rate(mocker):
     
     # assert mock was called with correct params
     mock_get.assert_called_once()
-    mock_get.assert_called_once_with(base_currency=from_currency, target_currency=to_currency)
+    mock_get.assert_called_once_with(base_currency__code=from_currency, target_currency__code=to_currency)
     
     
     

@@ -6,6 +6,7 @@ from rest_framework import permissions
 from rest_framework import serializers
 from quotation_system.accounts.models import Account
 from django.db import transaction
+from ..currencies.utils import convert_amount
 
 class TransactionListView(generics.ListCreateAPIView):
     """
@@ -26,6 +27,8 @@ class TransactionListView(generics.ListCreateAPIView):
         # add user to the transaction serializer
         serializer.validated_data['user'] = user
         
+        trx_amount = serializer.validated_data['amount']
+        
         with transaction.atomic():
             
             # get account to update balnace
@@ -33,35 +36,42 @@ class TransactionListView(generics.ListCreateAPIView):
             account = Account.objects.select_for_update().get(user=user, pk=self.request.data['account'])
             
             # update balance
-            # if it's a deposit
+            # --- DEPOSIT ----
             if transaction_type == Transaction.TRANSACTION_TYPES[0][0]:
+                
+                # convert amount 
+                converted_amount = convert_amount(trx_amount, serializer.validated_data['currency'], account.currency)
                 
                 # update transaction previous
                 serializer.validated_data['previous_balance'] = account.balance
                 
                 # update account balance
-                account.balance += serializer.validated_data['amount']
+                account.balance += converted_amount
                 
                 # update transaction new balance
                 serializer.validated_data['new_balance'] = account.balance
                 
-            # if it's a withdrawal, decrease balance
+            # --- WITHDRAWAL ----
             elif transaction_type == Transaction.TRANSACTION_TYPES[1][0]:
                 
+                
+                # convert amount 
+                converted_amount = convert_amount(trx_amount, serializer.validated_data['currency'], account.currency)
+                
                 # check if account has enough balance
-                if account.balance < serializer.validated_data['amount']:
+                if account.balance < converted_amount:
                     raise serializers.ValidationError("Insufficient balance")
                 
                 # update transaction previous and new balance
                 serializer.validated_data['previous_balance'] = account.balance 
                 
                 # update account balance
-                account.balance -= serializer.validated_data['amount']
+                account.balance -= converted_amount
                 
                 # update transaction new balance
                 serializer.validated_data['new_balance'] = account.balance
                 
-            # transfer funds to another account
+            # --- TRANSFER ----
             elif transaction_type == Transaction.TRANSACTION_TYPES[2][0]:
                 
                 # check if related_account is defined
@@ -81,11 +91,17 @@ class TransactionListView(generics.ListCreateAPIView):
                 # update account balance
                 account.balance -= serializer.validated_data['amount']
                 
+                # convert amount to receiver currency
+                receiver_converted_amount = convert_amount(trx_amount, account.currency, receiver_account.currency)
+                
                 # update receiver account balance
-                receiver_account.balance += serializer.validated_data['amount']
+                receiver_account.balance += receiver_converted_amount
                 
                 # update transaction new balance
                 serializer.validated_data['new_balance'] = account.balance
+                
+                # set currency as the sender currency
+                serializer.validated_data['currency'] = account.currency
                 
                 
             else:

@@ -87,6 +87,7 @@ def test_perform_create_deposit_sets_user_and_update_account_balance(api_factory
     account = MagicMock(spec=Account)
     account.balance = account_balance
     account.id = 1
+    account.currency = 'USD'
     
     # assign the account to the returned value of the Account.objects.select_for_update().get() mock
     mock_select_for_update.return_value.get.return_value = account
@@ -95,6 +96,7 @@ def test_perform_create_deposit_sets_user_and_update_account_balance(api_factory
     serializer = create_autospec(TransactionSerializer, instance=True)
     serializer.validated_data = {
         "amount": data['amount'],
+        "currency": data['currency']
     }
     
     # act
@@ -140,6 +142,7 @@ def test_perform_create_withdrawal_sets_user_and_update_account_balance(api_fact
     account = MagicMock(spec=Account)
     account.balance = account_balance
     account.id = 1
+    account.currency = 'USD'
     
     # assign the account ot the returned vallue of the Account.objects.select_for_update().get() mock
     mock_select_for_update.return_value.get.return_value = account
@@ -148,6 +151,7 @@ def test_perform_create_withdrawal_sets_user_and_update_account_balance(api_fact
     serializer = create_autospec(TransactionSerializer, instance=True)
     serializer.validated_data = {
         "amount": data['amount'],
+        "currency": data['currency']
     }
     
     # act
@@ -188,7 +192,7 @@ def test_perform_create_transfer_sets_user_and_update_account_balance(api_factor
     view.request.user = user
     
      # define mock account
-    sender_account = MagicMock(spec=Account, balance = initial_sender_balance, id = 1)
+    sender_account = MagicMock(spec=Account, balance = initial_sender_balance, id = 1,)
     receiver_account = MagicMock(spec=Account, balance = initial_receiver_balance, id = 2)
     
     # mock get account
@@ -361,7 +365,7 @@ def test_perform_create_with_invalid_transaction_type(api_factory, user, view, m
     mock_select_for_update.return_value.get.return_value = MagicMock(spec=Account)
 
     serializer = create_autospec(TransactionSerializer, instance=True)
-    serializer.validated_data = {"amount": data["amount"]}
+    serializer.validated_data = {"amount": data["amount"], 'currency': data['currency']}
 
     with pytest.raises(serializers.ValidationError):
         view.perform_create(serializer)
@@ -392,9 +396,7 @@ def test_perform_create_withdrawal_with_not_enough_balance(api_factory, user, vi
     mock_select_for_update = mocker.patch('quotation_system.transactions.views.Account.objects.select_for_update')
     
     # define account
-    account = MagicMock(spec=Account)
-    account.balance = account_balance
-    account.id = 1
+    account = MagicMock(spec=Account, balance = account_balance, id=1, currency='USD')
     
     # assign the account ot the returned vallue of the Account.objects.select_for_update().get() mock
     mock_select_for_update.return_value.get.return_value = account
@@ -403,6 +405,7 @@ def test_perform_create_withdrawal_with_not_enough_balance(api_factory, user, vi
     serializer = create_autospec(TransactionSerializer, instance=True)
     serializer.validated_data = {
         "amount": data['amount'],
+        "currency": data['currency']
     }
     
     # act
