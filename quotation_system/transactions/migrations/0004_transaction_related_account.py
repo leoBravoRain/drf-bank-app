@@ -7,14 +7,19 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0002_alter_account_balance'),
-        ('transactions', '0003_alter_transaction_transaction_type'),
+        ("accounts", "0002_alter_account_balance"),
+        ("transactions", "0003_alter_transaction_transaction_type"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='transaction',
-            name='related_account',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='related_account', to='accounts.account'),
+            model_name="transaction",
+            name="related_account",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="related_account",
+                to="accounts.account",
+            ),
         ),
     ]

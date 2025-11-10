@@ -40,4 +40,3 @@ echo "  1. Create superuser: docker compose exec web python manage.py createsupe
 echo "  2. View logs: docker compose logs -f"
 echo "  3. Stop: docker compose down"
 echo ""
-

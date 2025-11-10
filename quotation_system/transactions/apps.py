@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class TransactionsConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'quotation_system.transactions'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "quotation_system.transactions"
