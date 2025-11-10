@@ -1,7 +1,7 @@
 import pytest
 from rest_framework.test import APIRequestFactory
 from quotation_system.transactions.views import TransactionListView, TransactionDetailView
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 from quotation_system.transactions.models import Transaction
 from quotation_system.transactions.serializers import TransactionSerializer
 from unittest.mock import create_autospec
@@ -31,6 +31,13 @@ def detail_view():
     """Provides a TransactionDetailView instance."""
     return TransactionDetailView()
 
+@pytest.fixture
+def mock_atomic(mocker):
+    atomic_cm = mocker.MagicMock()
+    atomic_cm.__enter__.return_value = None
+    atomic_cm.__exit__.return_value = None
+    return mocker.patch("quotation_system.transactions.views.transaction.atomic", return_value=atomic_cm)
+
 @pytest.mark.unit
 def test_get_queryset_returns_transactions_filtered_by_user(api_factory, user, view, mocker):
     
@@ -52,7 +59,7 @@ def test_get_queryset_returns_transactions_filtered_by_user(api_factory, user, v
     mock_filter.assert_called_once_with(user=user)
     
 @pytest.mark.unit
-def test_perform_create_deposit_sets_user_and_update_account_balance(api_factory, user, view, mocker):
+def test_perform_create_deposit_sets_user_and_update_account_balance(api_factory, user, view, mocker, mock_atomic):
     
     # arrange
     transaction_amount = 100
@@ -74,15 +81,15 @@ def test_perform_create_deposit_sets_user_and_update_account_balance(api_factory
     view.request = view.initialize_request(request)
     
     # mock get account
-    mock_get_account = mocker.patch('quotation_system.transactions.views.Account.objects.get')
+    mock_select_for_update = mocker.patch('quotation_system.transactions.views.Account.objects.select_for_update')
     
     # define account
     account = MagicMock(spec=Account)
     account.balance = account_balance
     account.id = 1
     
-    # assign the account ot the returned vallue of the Account.objects.get() mock
-    mock_get_account.return_value = account
+    # assign the account to the returned value of the Account.objects.select_for_update().get() mock
+    mock_select_for_update.return_value.get.return_value = account
     
     # create serializer object
     serializer = create_autospec(TransactionSerializer, instance=True)
@@ -96,6 +103,7 @@ def test_perform_create_deposit_sets_user_and_update_account_balance(api_factory
     # assert
     serializer.save.assert_called_once()
     account.save.assert_called_once()
+    mock_atomic.assert_called_once()
     
     # check balance was updated
     assert account.balance == data['amount']
@@ -104,7 +112,7 @@ def test_perform_create_deposit_sets_user_and_update_account_balance(api_factory
     
 
 @pytest.mark.unit
-def test_perform_create_withdrawal_sets_user_and_update_account_balance(api_factory, user, view, mocker):
+def test_perform_create_withdrawal_sets_user_and_update_account_balance(api_factory, user, view, mocker, mock_atomic):
     
     # arrange
     transaction_amount = 50
@@ -126,15 +134,15 @@ def test_perform_create_withdrawal_sets_user_and_update_account_balance(api_fact
     view.request = view.initialize_request(request)
     
     # mock get account
-    mock_get_account = mocker.patch('quotation_system.transactions.views.Account.objects.get')
+    mock_select_for_update = mocker.patch('quotation_system.transactions.views.Account.objects.select_for_update')
     
     # define account
     account = MagicMock(spec=Account)
     account.balance = account_balance
     account.id = 1
     
-    # assign the account ot the returned vallue of the Account.objects.get() mock
-    mock_get_account.return_value = account
+    # assign the account ot the returned vallue of the Account.objects.select_for_update().get() mock
+    mock_select_for_update.return_value.get.return_value = account
     
     # create serializer object
     serializer = create_autospec(TransactionSerializer, instance=True)
@@ -148,6 +156,7 @@ def test_perform_create_withdrawal_sets_user_and_update_account_balance(api_fact
     # assert
     assert serializer.save.call_count == 1
     assert account.save.call_count == 1
+    mock_atomic.assert_called_once()
     
     # check balance was updated
     assert account.balance == data['amount']
@@ -155,7 +164,7 @@ def test_perform_create_withdrawal_sets_user_and_update_account_balance(api_fact
     assert serializer.validated_data['new_balance'] == account_balance - transaction_amount
     
 @pytest.mark.unit
-def test_perform_create_transfer_sets_user_and_update_account_balance(api_factory, user, view, mocker):
+def test_perform_create_transfer_sets_user_and_update_account_balance(api_factory, user, view, mocker, mock_atomic):
     
     # arrange
     transaction_amount = 50
@@ -183,10 +192,11 @@ def test_perform_create_transfer_sets_user_and_update_account_balance(api_factor
     receiver_account = MagicMock(spec=Account, balance = initial_receiver_balance, id = 2)
     
     # mock get account
-    mock_get = mocker.patch(
-        "quotation_system.transactions.views.Account.objects.get",
-        side_effect=lambda **kwargs: sender_account if kwargs['pk'] == sender_account.id else receiver_account
+    mock_select_for_update = mocker.patch(
+        "quotation_system.transactions.views.Account.objects.select_for_update",
     )
+    mock_get = mock_select_for_update.return_value.get
+    mock_get.side_effect = [sender_account, receiver_account]
 
     # create serializer object
     serializer = create_autospec(TransactionSerializer, instance=True)
@@ -199,8 +209,8 @@ def test_perform_create_transfer_sets_user_and_update_account_balance(api_factor
     
     # Assert - ensure Account.objects.get called twice with correct params
     expected_calls = [
-        mocker.call(user=user, pk=sender_account.id),
-        mocker.call(user=user, pk=receiver_account.id),
+        call(user=user, pk=sender_account.id),
+        call(user=user, pk=receiver_account.id),
     ]
     mock_get.assert_has_calls(expected_calls)
     
@@ -210,6 +220,7 @@ def test_perform_create_transfer_sets_user_and_update_account_balance(api_factor
     # assert account.save() method was called once for each account
     assert sender_account.save.call_count == 1
     assert receiver_account.save.call_count == 1
+    mock_atomic.assert_called_once()
     
     new_sender_balance = initial_sender_balance - data['amount']
     
@@ -223,7 +234,7 @@ def test_perform_create_transfer_sets_user_and_update_account_balance(api_factor
     assert serializer.validated_data['new_balance'] == new_sender_balance
     
 @pytest.mark.unit
-def test_perform_create_transfer_without_enough_balance(api_factory, user, view, mocker):
+def test_perform_create_transfer_without_enough_balance(api_factory, user, view, mocker, mock_atomic):
     
     # arrange
     transaction_amount = 50
@@ -252,10 +263,10 @@ def test_perform_create_transfer_without_enough_balance(api_factory, user, view,
     
     # mock get account
     # this shoudl be called only once
-    mock_get = mocker.patch(
-        "quotation_system.transactions.views.Account.objects.get",
-        return_value=sender_account
+    mock_select_for_update = mocker.patch(
+        "quotation_system.transactions.views.Account.objects.select_for_update",
     )
+    mock_select_for_update.return_value.get.return_value = sender_account
 
     # create serializer object
     serializer = create_autospec(TransactionSerializer, instance=True)
@@ -274,9 +285,10 @@ def test_perform_create_transfer_without_enough_balance(api_factory, user, view,
     assert serializer.save.call_count == 0
     assert sender_account.save.call_count == 0
     assert receiver_account.save.call_count == 0
+    mock_atomic.assert_called_once()
     
 @pytest.mark.unit
-def test_perform_create_transfer_without_related_account(api_factory, user, view, mocker):
+def test_perform_create_transfer_without_related_account(api_factory, user, view, mocker, mock_atomic):
     
     # arrange
     transaction_amount = 50
@@ -304,10 +316,10 @@ def test_perform_create_transfer_without_related_account(api_factory, user, view
     
     # mock get account
     # this shoudl be called only once
-    mock_get = mocker.patch(
-        "quotation_system.transactions.views.Account.objects.get",
-        return_value=sender_account
+    mock_select_for_update = mocker.patch(
+        "quotation_system.transactions.views.Account.objects.select_for_update",
     )
+    mock_select_for_update.return_value.get.return_value = sender_account
 
     # create serializer object
     serializer = create_autospec(TransactionSerializer, instance=True)
@@ -326,9 +338,10 @@ def test_perform_create_transfer_without_related_account(api_factory, user, view
     assert serializer.save.call_count == 0
     assert sender_account.save.call_count == 0
     assert receiver_account.save.call_count == 0
+    mock_atomic.assert_called_once()
     
 @pytest.mark.unit
-def test_perform_create_with_invalid_transaction_type(api_factory, user, view, mocker):
+def test_perform_create_with_invalid_transaction_type(api_factory, user, view, mocker, mock_atomic):
     
     # # arrange
     data = {
@@ -342,10 +355,10 @@ def test_perform_create_with_invalid_transaction_type(api_factory, user, view, m
     view.request = view.initialize_request(request)
     view.request.user = user  # assign after initialize_request
 
-    mock_get_account = mocker.patch(
-        "quotation_system.transactions.views.Account.objects.get",
-        return_value=MagicMock(spec=Account),
+    mock_select_for_update = mocker.patch(
+        "quotation_system.transactions.views.Account.objects.select_for_update",
     )
+    mock_select_for_update.return_value.get.return_value = MagicMock(spec=Account)
 
     serializer = create_autospec(TransactionSerializer, instance=True)
     serializer.validated_data = {"amount": data["amount"]}
@@ -353,11 +366,12 @@ def test_perform_create_with_invalid_transaction_type(api_factory, user, view, m
     with pytest.raises(serializers.ValidationError):
         view.perform_create(serializer)
 
-    mock_get_account.assert_called_once_with(user=user, pk=data["account"])
+    mock_select_for_update.return_value.get.assert_called_once_with(user=user, pk=data["account"])
     serializer.save.assert_not_called()
+    mock_atomic.assert_called_once()
     
 @pytest.mark.unit
-def test_perform_create_withdrawal_with_not_enough_balance(api_factory, user, view, mocker):
+def test_perform_create_withdrawal_with_not_enough_balance(api_factory, user, view, mocker, mock_atomic):
     
     # arrange
     transaction_amount = 100
@@ -375,15 +389,15 @@ def test_perform_create_withdrawal_with_not_enough_balance(api_factory, user, vi
     view.request.user = user  # assign after initialize_request
     
     # mock get account
-    mock_get_account = mocker.patch('quotation_system.transactions.views.Account.objects.get')
+    mock_select_for_update = mocker.patch('quotation_system.transactions.views.Account.objects.select_for_update')
     
     # define account
     account = MagicMock(spec=Account)
     account.balance = account_balance
     account.id = 1
     
-    # assign the account ot the returned vallue of the Account.objects.get() mock
-    mock_get_account.return_value = account
+    # assign the account ot the returned vallue of the Account.objects.select_for_update().get() mock
+    mock_select_for_update.return_value.get.return_value = account
     
      # create serializer object
     serializer = create_autospec(TransactionSerializer, instance=True)
@@ -399,6 +413,7 @@ def test_perform_create_withdrawal_with_not_enough_balance(api_factory, user, vi
     assert e.value.detail[0] == "Insufficient balance"
     assert serializer.save.call_count == 0
     assert account.save.call_count == 0
+    mock_atomic.assert_called_once()
     
 
 @pytest.mark.unit
