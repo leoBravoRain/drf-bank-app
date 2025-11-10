@@ -3,7 +3,7 @@ from ..utils import convert_amount
 from ..models import CurrencyRate
 
 @pytest.mark.unit
-def test_convert_amount(mocker):
+def test_convert_amount_with_correct_input_data(mocker):
     # arrange
     
     # define basic params
@@ -32,7 +32,7 @@ def test_convert_amount(mocker):
     
     
 @pytest.mark.unit
-def test_convert_amount_same_currency(mocker):
+def test_convert_amount_same_currency():
     # arrange
     
     # define basic params
