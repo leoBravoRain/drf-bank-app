@@ -71,7 +71,6 @@ def test_auth_flow(live_server):
 
     trx = trx_response.json()
 
-    print(trx_response.json())
     assert trx_response.status_code == 201
     assert trx["previous_balance"] == "0.00"
     assert trx["new_balance"] == f"{trx_amount}.00"
