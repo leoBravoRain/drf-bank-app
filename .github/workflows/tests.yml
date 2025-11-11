@@ -59,4 +59,4 @@ jobs:
 
       - name: Run e2e suite
         run: |
-          pytest -m e2e
+          pytest -m e2e -s
