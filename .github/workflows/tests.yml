@@ -56,3 +56,7 @@ jobs:
       - name: Run integration suite
         run: |
           pytest -m integration
+
+      - name: Run e2e suite
+        run: |
+          pytest -m e2e
