@@ -58,15 +58,15 @@ jobs:
 
       - name: Run unit suite
         run: |
-          pytest -m unit --cov=quotation_system --fail-under=70
+          pytest -m unit --cov=quotation_system --cov-fail-under=70
         continue-on-error: false
 
       - name: Run integration suite
         run: |
-          pytest -m integration --cov=quotation_system --fail-under=40
+          pytest -m integration --cov=quotation_system --cov-fail-under=40
         continue-on-error: false
 
       - name: Run e2e suite
         run: |
-          pytest -m e2e --cov=quotation_system --fail-under-40
+          pytest -m e2e --cov=quotation_system --cov-fail-under-40
         continue-on-error: false
