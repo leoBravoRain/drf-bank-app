@@ -68,5 +68,5 @@ jobs:
 
       - name: Run e2e suite
         run: |
-          pytest -m e2e --cov=quotation_system --cov-fail-under-40
+          pytest -m e2e --cov=quotation_system --cov-fail-under=40
         continue-on-error: false
