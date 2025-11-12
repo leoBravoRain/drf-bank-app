@@ -17,13 +17,21 @@ def test_auth_flow(live_server):
     # trx info
     trx_amount = 1
 
-    # create test user
-    user = User.objects.create_user(username=username, password=password)
-
     # urls
+    signup_url = f"{live_server.url}/api/users/signup/"
     token_url = f"{live_server.url}/api/users/login/"
     trx_url = f"{live_server.url}/api/transactions/"
     account_url = f"{live_server.url}/api/accounts/"
+
+    # 0. create user (signup)
+    signup_response = requests.post(
+        signup_url, json={"username": username, "password": password}
+    )
+
+    assert signup_response.status_code == 201
+
+    user = signup_response.json()
+    assert user["username"] == username
 
     # 1. Get token via real HTTP call
     token_response = requests.post(
