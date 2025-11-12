@@ -6,3 +6,16 @@ target-version = ["py311"]
 profile = "black"
 line_length = 88
 known_first_party = ["quotation_system"]
+
+[tool.mypy]
+plugins = ["mypy_django_plugin.main"]
+python_version = "3.11"
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+warn_unused_ignores = true
+warn_return_any = true
+strict_equality = true
+show_error_codes = true
+
+[tool.django-stubs]
+django_settings_module = "quotation_system.settings"
