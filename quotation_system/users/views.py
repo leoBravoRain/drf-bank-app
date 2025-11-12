@@ -1,7 +1,9 @@
+from rest_framework import generics, permissions
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from .serializers import UserSerializer
 
-# TODO: add typing?
+
 class LoginView(TokenObtainPairView):
     """
     View for user login.
@@ -17,3 +19,12 @@ class RefreshTokenView(TokenRefreshView):
     """
 
     pass
+
+
+class SignUpView(generics.CreateAPIView):
+    """
+    View for signun up a new user.
+    """
+
+    serializer_class = UserSerializer
+    permission_classes = [permissions.AllowAny]

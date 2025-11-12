@@ -8,6 +8,7 @@ Django==5.2.8
 django-stubs==5.2.7
 django-stubs-ext==5.2.7
 djangorestframework==3.16.1
+djangorestframework-stubs==3.16.5
 djangorestframework_simplejwt==5.5.1
 filelock==3.20.0
 identify==2.6.15
@@ -34,6 +35,7 @@ PyYAML==6.0.3
 requests==2.32.5
 sqlparse==0.5.3
 types-PyYAML==6.0.12.20250915
+types-requests==2.32.4.20250913
 typing_extensions==4.15.0
 urllib3==2.5.0
 virtualenv==20.35.4
