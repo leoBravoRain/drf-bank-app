@@ -53,10 +53,29 @@ jobs:
         run: |
           python manage.py migrate --noinput
 
+      # - name: Run integration suite
+      #   run: |
+      #     pytest -m integration
+
+      # - name: Run e2e suite
+      #   run: |
+      #     pytest -m e2e
       - name: Run integration suite
         run: |
-          pytest -m integration
+          pytest -m integration --cov=quotation_system --cov-report=xml:coverage.xml --cov-append
 
       - name: Run e2e suite
         run: |
-          pytest -m e2e
+          pytest -m e2e --cov=quotation_system --cov-report=xml:coverage.xml --cov-append
+
+      - name: Enforce coverage and comment
+        run: |
+          coverage report --fail-under=90
+        continue-on-error: false
+
+      - name: Comment coverage summary
+        uses: MishaKav/pytest-coverage-comment@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          coverage-path: coverage.xml
+          hide-old-comments: true
