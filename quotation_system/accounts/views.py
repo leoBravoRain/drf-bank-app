@@ -36,6 +36,5 @@ class AccountDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_serializer_class(self) -> Any:
         if self.request.method == HTTPMethod.PATCH:
-            print("UPDATE")
             return AccountUpdateSerializer
         return AccountSerializer
