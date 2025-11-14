@@ -1,7 +1,7 @@
 from http import HTTPMethod
 from typing import Any
 
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, serializers
 
 from .models import Account
 from .serializers import AccountSerializer, AccountUpdateSerializer
@@ -38,3 +38,13 @@ class AccountDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == HTTPMethod.PATCH:
             return AccountUpdateSerializer
         return AccountSerializer
+
+    def perform_destroy(self, instance: Account) -> None:
+        """
+        Only accounts with balace 0 can be deleted.
+        """
+        if instance.balance != 0:
+            raise serializers.ValidationError(
+                "This account can not be deleted because balance is not zero"
+            )
+        return super().perform_destroy(instance)
