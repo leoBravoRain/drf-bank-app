@@ -18,3 +18,15 @@ class AccountListView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         return Account.objects.filter(user=self.request.user).order_by("account_number")
+
+
+class AccountDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Get, update or destroy an account
+    """
+
+    serializer_class = AccountSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Account.objects.filter(user=self.request.user)
