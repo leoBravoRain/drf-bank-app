@@ -1,10 +1,11 @@
 from unittest.mock import MagicMock, create_autospec
 
 import pytest
+from rest_framework import serializers
 from rest_framework.test import APIRequestFactory
 
 from quotation_system.accounts.serializers import AccountSerializer
-from quotation_system.accounts.views import AccountListView
+from quotation_system.accounts.views import AccountDetailView, AccountListView
 
 
 # fixtures
@@ -63,3 +64,64 @@ def test_get_queryset_returns_accounts_for_the_user(api_factory, user, view, moc
     # Assert
     mock_filter.assert_called_once()
     mock_filter.assert_called_once_with(user=user)
+
+
+@pytest.mark.unit
+def test_delete_account_with_balance_different_to_zero(api_factory, user):
+
+    # accoun info
+    account_balance = 10
+
+    # arrange
+    request = api_factory.delete(
+        "/1/",
+    )
+
+    view = AccountDetailView()
+
+    request.user = user
+    view.request = view.initialize_request(request)
+
+    # define instance
+    account = MagicMock(balance=account_balance)
+    account.delete = MagicMock()
+
+    # act + assert
+    with pytest.raises(serializers.ValidationError) as e:
+        view.perform_destroy(account)
+
+    # assert error message
+    error_message = str(e.value.detail[0])
+    assert (
+        error_message == "This account can not be deleted because balance is not zero"
+    )
+
+    # assert delete was not called
+    account.delete.assert_not_called()
+
+
+@pytest.mark.unit
+def test_delete_account_with_balance_zero(api_factory, user):
+
+    # accoun info
+    account_balance = 0
+
+    # arrange
+    request = api_factory.delete(
+        "/1/",
+    )
+
+    view = AccountDetailView()
+
+    request.user = user
+    view.request = view.initialize_request(request)
+
+    # define instance
+    account = MagicMock(balance=account_balance)
+    account.delete = MagicMock()
+
+    # act
+    view.perform_destroy(account)
+
+    # assert delete was called
+    account.delete.assert_called_once()
