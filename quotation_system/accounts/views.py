@@ -1,7 +1,10 @@
+from http import HTTPMethod
+from typing import Any
+
 from rest_framework import generics, permissions
 
 from .models import Account
-from .serializers import AccountSerializer
+from .serializers import AccountSerializer, AccountUpdateSerializer
 
 
 class AccountListView(generics.ListCreateAPIView):
@@ -30,3 +33,9 @@ class AccountDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return Account.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self) -> Any:
+        if self.request.method == HTTPMethod.PATCH:
+            print("UPDATE")
+            return AccountUpdateSerializer
+        return AccountSerializer
