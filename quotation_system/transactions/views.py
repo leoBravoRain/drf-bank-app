@@ -1,5 +1,4 @@
 from django.db import transaction
-from django.shortcuts import render
 from rest_framework import generics, permissions, serializers
 
 from quotation_system.accounts.models import Account
@@ -19,9 +18,18 @@ class TransactionListView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Transaction.objects.filter(user=self.request.user).order_by(
-            "-created_at"
-        )
+
+        # get account
+        account_id = self.request.query_params.get("account_id")
+
+        # define query
+        query = Transaction.objects.filter(user=self.request.user)
+
+        # apply filter if present
+        if account_id and account_id.isdigit():
+            query = query.filter(account=account_id)
+
+        return query.order_by("-created_at")
 
     def perform_create(self, serializer):
 

@@ -21,4 +21,4 @@ class AccountUpdateSerializer(serializers.ModelSerializer):
 class AccountListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ("id", "account_name")
+        fields = ("id", "account_name", "currency", "balance")
