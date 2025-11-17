@@ -10,9 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import logging
 import os
 from datetime import timedelta
 from pathlib import Path
+
+import structlog
+from structlog.contextvars import merge_contextvars
+from structlog.processors import JSONRenderer, TimeStamper
+from structlog.stdlib import LoggerFactory
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -57,6 +63,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "quotation_system.middlewares.api_logging.RequestContextMiddleware",
 ]
 
 ROOT_URLCONF = "quotation_system.urls"
@@ -150,3 +157,32 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
 }
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    # Django + DRF logs go to console
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+}
+
+# Structlog configuration
+structlog.configure(
+    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+    logger_factory=LoggerFactory(),
+    processors=[
+        merge_contextvars,  # includes request-id, user-id, etc.
+        TimeStamper(fmt="iso"),
+        structlog.processors.add_log_level,
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        JSONRenderer(),
+    ],
+)

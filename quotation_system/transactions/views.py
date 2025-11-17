@@ -1,3 +1,4 @@
+import structlog
 from django.db import transaction
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, serializers
@@ -9,6 +10,8 @@ from .filters import TransactionFilter
 from .models import Transaction
 from .paginator import TransactionsPaginator
 from .serializers import TransactionSerializer
+
+logger = structlog.get_logger()
 
 
 class TransactionListView(generics.ListCreateAPIView):
@@ -30,6 +33,8 @@ class TransactionListView(generics.ListCreateAPIView):
         )
 
     def perform_create(self, serializer):
+
+        logger.info("trying to create a new trx with params")
 
         user = self.request.user
         transaction_type = self.request.data["transaction_type"]
