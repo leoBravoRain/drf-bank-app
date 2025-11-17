@@ -19,6 +19,8 @@ class AccountUpdateSerializer(serializers.ModelSerializer):
 
 
 class AccountListSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source="user.username")
+
     class Meta:
         model = Account
-        fields = ("id", "account_name", "currency", "balance")
+        fields = ("id", "account_name", "currency", "balance", "user")
