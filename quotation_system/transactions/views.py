@@ -1,9 +1,11 @@
 from django.db import transaction
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, serializers
 
 from quotation_system.accounts.models import Account
 
 from ..currencies.utils import convert_amount
+from .filters import TransactionFilter
 from .models import Transaction
 from .serializers import TransactionSerializer
 
@@ -16,20 +18,14 @@ class TransactionListView(generics.ListCreateAPIView):
 
     serializer_class = TransactionSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TransactionFilter
 
     def get_queryset(self):
 
-        # get account
-        account_id = self.request.query_params.get("account_id")
-
-        # define query
-        query = Transaction.objects.filter(user=self.request.user)
-
-        # apply filter if present
-        if account_id and account_id.isdigit():
-            query = query.filter(account=account_id)
-
-        return query.order_by("-created_at")
+        return Transaction.objects.filter(user=self.request.user).order_by(
+            "-created_at"
+        )
 
     def perform_create(self, serializer):
 
