@@ -7,6 +7,7 @@ from quotation_system.accounts.models import Account
 from ..currencies.utils import convert_amount
 from .filters import TransactionFilter
 from .models import Transaction
+from .paginator import TransactionsPaginator
 from .serializers import TransactionSerializer
 
 
@@ -20,6 +21,7 @@ class TransactionListView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_class = TransactionFilter
+    pagination_class = TransactionsPaginator
 
     def get_queryset(self):
 
