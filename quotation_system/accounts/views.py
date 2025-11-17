@@ -4,7 +4,11 @@ from typing import Any
 from rest_framework import generics, permissions, serializers
 
 from .models import Account
-from .serializers import AccountSerializer, AccountUpdateSerializer
+from .serializers import (
+    AccountListSerializer,
+    AccountSerializer,
+    AccountUpdateSerializer,
+)
 
 
 class AccountListView(generics.ListCreateAPIView):
@@ -15,6 +19,13 @@ class AccountListView(generics.ListCreateAPIView):
 
     serializer_class = AccountSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self) -> Any:
+        if self.request.method == HTTPMethod.GET:
+            return AccountListSerializer
+        return AccountSerializer
+
+        return super().get_serializer_class()
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user, balance=0)
