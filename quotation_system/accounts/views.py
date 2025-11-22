@@ -3,13 +3,14 @@ from typing import Any
 
 from rest_framework import generics, permissions, serializers
 
+from ..notifications.email_producer import publish_email
 from .models import Account
 from .serializers import (
     AccountListSerializer,
     AccountSerializer,
     AccountUpdateSerializer,
 )
-from ..notifications.email_producer import publish_email
+
 
 class AccountListView(generics.ListCreateAPIView):
     """
@@ -26,14 +27,15 @@ class AccountListView(generics.ListCreateAPIView):
         return AccountSerializer
 
     def perform_create(self, serializer):
-        publish_email({
-            "to": 'leo.bravo.rain@gmail.com',
-            "template": "welcome",
-            "data": {"name": 'userTest'}
-        })
-        
-        serializer.save(user=self.request.user, balance=0)
+        publish_email(
+            {
+                "to": "leo.bravo.rain@gmail.com",
+                "template": "welcome",
+                "data": {"name": "userTest"},
+            }
+        )
 
+        serializer.save(user=self.request.user, balance=0)
 
     def get_queryset(self):
         return Account.objects.filter(user=self.request.user).order_by("account_number")

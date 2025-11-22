@@ -1,17 +1,18 @@
+import json
+
 import pika
 from django.conf import settings
-import json
+
 
 def publish_email(message: dict):
     credentials = pika.PlainCredentials(
-        settings.RABBITMQ["USER"],
-        settings.RABBITMQ["PASSWORD"]
+        settings.RABBITMQ["USER"], settings.RABBITMQ["PASSWORD"]
     )
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(
             host=settings.RABBITMQ["HOST"],
             port=settings.RABBITMQ["PORT"],
-            credentials=credentials
+            credentials=credentials,
         )
     )
     channel = connection.channel()
@@ -25,7 +26,7 @@ def publish_email(message: dict):
         body=json.dumps(message).encode("utf-8"),
         properties=pika.BasicProperties(
             delivery_mode=2,  # make message persistent
-        )
+        ),
     )
 
     connection.close()
