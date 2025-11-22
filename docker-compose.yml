@@ -50,7 +50,29 @@ services:
       - redis_data:/data
     command: ["redis-server", "--appendonly", "yes"]
 
+  notifications-system:
+    build: ./notifications_system
+    volumes:
+      - .:/code
+    ports:
+      - "8001:8000"
+    restart: unless-stopped
+
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"       # AMQP protocol port (apps connect here)
+      - "15672:15672"     # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
 volumes:
   postgres_data:
     name: quotation_postgres_data
   redis_data:
+  rabbitmq_data:

@@ -9,7 +9,7 @@ from .serializers import (
     AccountSerializer,
     AccountUpdateSerializer,
 )
-
+from ..notifications.email_producer import publish_email
 
 class AccountListView(generics.ListCreateAPIView):
     """
@@ -25,10 +25,15 @@ class AccountListView(generics.ListCreateAPIView):
             return AccountListSerializer
         return AccountSerializer
 
-        return super().get_serializer_class()
-
     def perform_create(self, serializer):
+        publish_email({
+            "to": 'leo.bravo.rain@gmail.com',
+            "template": "welcome",
+            "data": {"name": 'userTest'}
+        })
+        
         serializer.save(user=self.request.user, balance=0)
+
 
     def get_queryset(self):
         return Account.objects.filter(user=self.request.user).order_by("account_number")

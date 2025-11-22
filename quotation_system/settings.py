@@ -196,3 +196,11 @@ CACHES = {
         },
     }
 }
+
+RABBITMQ = {
+    "HOST": "rabbitmq",
+    "PORT": 5672,
+    "USER": "admin",
+    "PASSWORD": "admin",
+    "QUEUE": "email_queue",
+}
