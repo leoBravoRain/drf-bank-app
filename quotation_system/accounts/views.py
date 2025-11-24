@@ -1,6 +1,7 @@
 from http import HTTPMethod
 from typing import Any
 
+from django.contrib.auth.models import User
 from rest_framework import generics, permissions, serializers
 
 from ..notifications.email_producer import publish_email
@@ -27,15 +28,21 @@ class AccountListView(generics.ListCreateAPIView):
         return AccountSerializer
 
     def perform_create(self, serializer):
-        publish_email(
-            {
-                "to": "leo.bravo.rain@gmail.com",
-                "template": "welcome",
-                "data": {"name": "userTest"},
-            }
-        )
 
         serializer.save(user=self.request.user, balance=0)
+
+        print(self)
+
+        # get user for send email
+        user = User.objects.get(username=self.request.user)
+
+        publish_email(
+            {
+                "to": user.email,
+                "template": "new_account",
+                "data": serializer.validated_data,
+            }
+        )
 
     def get_queryset(self):
         return Account.objects.filter(user=self.request.user).order_by("account_number")
