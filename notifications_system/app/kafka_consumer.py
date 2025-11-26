@@ -5,7 +5,7 @@ KAFKA_BOOTSTRAP = "192.168.1.83:9092"  # Example for Docker/K8s internal network
 
 async def consume_messages():
     consumer = AIOKafkaConsumer(
-        "account.created",
+        "account",
         bootstrap_servers=KAFKA_BOOTSTRAP,
         group_id="notificaction-service",
         enable_auto_commit=True,

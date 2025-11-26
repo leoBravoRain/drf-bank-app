@@ -37,6 +37,7 @@ class AccountListView(generics.ListCreateAPIView):
         # get user for send email
         user = User.objects.get(username=self.request.user)
 
+        # publish emeail on rabbit mq
         # publish_email(
         #     {
         #         "to": user.email,
@@ -45,7 +46,8 @@ class AccountListView(generics.ListCreateAPIView):
         #     }
         # )
 
-        send_event("account.created", str(user.id), {"data": "test"})
+        # send event to kafka
+        send_event("account", "created", user.id, serializer.validated_data)
 
     def get_queryset(self):
         return Account.objects.filter(user=self.request.user).order_by("account_number")
