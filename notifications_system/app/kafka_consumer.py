@@ -1,4 +1,9 @@
+import json
+
 from aiokafka import AIOKafkaConsumer
+
+from .consumer import EmailPayload
+from .services.email_service import send_email
 
 KAFKA_BOOTSTRAP = "192.168.1.83:9092"  # Example for Docker/K8s internal networks
 
@@ -14,23 +19,27 @@ async def consume_messages():
     await consumer.start()
     try:
         async for msg in consumer:
-
+            # This is for rabbitMQ
             # body = message.body.decode()
             # if not body:
             #     print("⚠️ Received empty message body, skipping...")
             #     return
 
             # payload = json.loads(body)
-            # print("📩 Received email task:", payload)
+            message = msg.value.decode()
+            payload = json.loads(message)
 
-            # email_payload = EmailPayload(
-            #     from_='Eventia <hola@eventi-app.com>',
-            #     to=['leo.bravo.rain@gmail.com'],
-            #     subject= "New account created",
-            #     html= "<h1>New account created </h1>",
-            # )
+            if payload.get("event_type") == "account.created":
 
-            # send_email(email_payload)
-            print(f"Received: {msg.value.decode()}")
+                email_payload = EmailPayload(
+                    from_="Eventia <hola@eventi-app.com>",
+                    to=["leo.bravo.rain@gmail.com"],
+                    subject="New account created",
+                    html="<h1>New account created </h1>",
+                )
+
+                send_email(email_payload)
+            else:
+                print("no event type recognized", payload["event_type"])
     finally:
         await consumer.stop()

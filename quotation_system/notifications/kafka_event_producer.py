@@ -11,10 +11,9 @@ producer = Producer(producer_config)
 def send_event(entity: str, action: str, key: str, data: dict[str, Any]):
 
     key = str(key)  # force key to string
-    payload = {
-        "event_type": entity + "." + action,
-        "data": json.dumps(data).encode("utf-8"),  # Kafka expects bytes
-    }
+    payload = {"event_type": f"{entity}.{action}", "data": data}
 
-    producer.produce(topic=entity, key=key, value=str(payload))
+    value_str = json.dumps(payload)
+
+    producer.produce(topic=entity, key=key, value=value_str.encode("utf-8"))
     producer.flush()  # ensures delivery
