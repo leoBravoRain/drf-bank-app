@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drf-api
+  labels:
+    app: drf-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drf-api
+  template:
+    metadata:
+      labels:
+        app: drf-api
+    spec:
+      containers:
+        - name: drf-api
+          image: quotation_api-drf:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              cpu: 30m
+            limits:
+              cpu: 100m
+          env:
+            - name: DB_ENGINE
+              value: "django.db.backends.postgresql"
+            - name: DB_HOST
+              value: "host.minikube.internal"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "quotation_system"
+            - name: DB_USER
+              value: "postgres"
+            - name: DB_PASSWORD
+              value: "postgres123"

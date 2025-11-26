@@ -198,7 +198,9 @@ CACHES = {
 }
 
 RABBITMQ = {
-    "HOST": "rabbitmq",
+    # "HOST": "rabbitmq",
+    # this is for kubernetes
+    "HOST": "host.minikube.internal",
     "PORT": 5672,
     "USER": "admin",
     "PASSWORD": "admin",

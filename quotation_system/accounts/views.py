@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from rest_framework import generics, permissions, serializers
 
 from ..notifications.email_producer import publish_email
+from ..notifications.kafka_event_producer import send_event
 from .models import Account
 from .serializers import (
     AccountListSerializer,
@@ -36,13 +37,15 @@ class AccountListView(generics.ListCreateAPIView):
         # get user for send email
         user = User.objects.get(username=self.request.user)
 
-        publish_email(
-            {
-                "to": user.email,
-                "template": "new_account",
-                "data": serializer.validated_data,
-            }
-        )
+        # publish_email(
+        #     {
+        #         "to": user.email,
+        #         "template": "new_account",
+        #         "data": serializer.validated_data,
+        #     }
+        # )
+
+        send_event("account.created", str(user.id), {"data": "test"})
 
     def get_queryset(self):
         return Account.objects.filter(user=self.request.user).order_by("account_number")

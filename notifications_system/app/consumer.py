@@ -1,9 +1,13 @@
-import asyncio
 import json
 
 import aio_pika
 
-RABBITMQ_URL = "amqp://admin:admin@rabbitmq/"
+from .services.email_service import EmailPayload, send_email
+
+# If running with docker-compose
+# RABBITMQ_URL = "amqp://admin:admin@rabbitmq/"
+# If running with kubernetes
+RABBITMQ_URL = "amqp://admin:admin@host.minikube.internal/"
 
 
 async def email_handler(message: aio_pika.abc.AbstractIncomingMessage):
@@ -17,9 +21,15 @@ async def email_handler(message: aio_pika.abc.AbstractIncomingMessage):
             payload = json.loads(body)
             print("📩 Received email task:", payload)
 
-            # simulate processing (send email, etc.)
-            await asyncio.sleep(1)
-            print("✔ Email processed")
+            email_payload = EmailPayload(
+                from_="Eventia <hola@eventi-app.com>",
+                to=["leo.bravo.rain@gmail.com"],
+                subject="New account created",
+                html="<h1>New account created </h1>",
+            )
+
+            send_email(email_payload)
+
         except json.JSONDecodeError as e:
             print(f"❌ Failed to parse JSON: {e}")
             print(
