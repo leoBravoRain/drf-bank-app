@@ -19,36 +19,58 @@ docker build -t quotation_api-drf .
 echo "📦 Loading quotation_api-drf into minikube nodes..."
 ./scripts/load-image-to-minikube-nodes.sh quotation_api-drf
 
-# ANALYTICS SERVICE
+# ANALYTICS SERVICE (NEST)
 echo "🔧 Building analytics_service_nest image..."
 docker build -t analytics_service_nest ./analytics_service/
 
 echo "📦 Loading analytics_service_nest into minikube nodes..."
 ./scripts/load-image-to-minikube-nodes.sh analytics_service_nest
 
-# SCALLING APPS IN K8S (TO FORCE RESTART)
+
+
+##############################################
+# APPLY K8S MANIFESTS
+##############################################
+
+echo "📄 Applying Kubernetes manifests..."
+
+# NOTIFICATIONS SYSTEM
+echo "📄 Applying notifications-fast-api k8s YAML..."
+kubectl apply -f kubernetes/notifications-fast-api/
+
+# DRF API
+echo "📄 Applying drf-api k8s YAML..."
+kubectl apply -f kubernetes/drf-api/
+
+# ANALYTICS SERVICE (NEST)
+echo "📄 Applying analytics-service-nest YAML..."
+kubectl apply -f kubernetes/analytics-service-nest/
+
+
+
+##############################################
+# FORCE RESTART USING SCALE LOGIC
+##############################################
+
 echo "🔄 Scaling deployments in Kubernetes..."
 
 # NOTIFICATIONS SYSTEM
 echo "⛔ Stopping notifications-fast-api..."
 kubectl scale deployment notifications-fast-api --replicas=0
-
 echo "🚀 Starting notifications-fast-api..."
 kubectl scale deployment notifications-fast-api --replicas=1
 
 # DRF API
 echo "⛔ Stopping drf-api..."
 kubectl scale deployment drf-api --replicas=0
-
 echo "🚀 Starting drf-api..."
 kubectl scale deployment drf-api --replicas=1
 
 # ANALYTICS SERVICE
-echo "⛔ Stopping analytics-service..."
-kubectl scale deployment analytics-service --replicas=0
+echo "⛔ Stopping analytics-service-nest..."
+kubectl scale deployment analytics-service-nest --replicas=0
+echo "🚀 Starting analytics-service-nest..."
+kubectl scale deployment analytics-service-nest --replicas=1
 
-echo "🚀 Starting analytics-service..."
-kubectl scale deployment analytics-service --replicas=1
 
-
-echo "✅ Done! All images built, loaded, and deployments restarted."
+echo "✅ Done! Images built, manifests applied, and deployments restarted."
