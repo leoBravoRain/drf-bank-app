@@ -22,4 +22,4 @@ spec:
             - containerPort: 8000
           env:
             - name: RESEND_API_KEY
-              value: re_PNDT7fKb_zPkmUQdZgDrGhaTxfD3CiaEV
+              value: INSERT_HERE
