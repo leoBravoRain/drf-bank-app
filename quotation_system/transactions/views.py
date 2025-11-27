@@ -1,12 +1,20 @@
+import structlog
+from django.core.cache import cache
 from django.db import transaction
-from django.shortcuts import render
+from django.utils.encoding import force_str
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, permissions, serializers
+from rest_framework.response import Response
 
 from quotation_system.accounts.models import Account
 
 from ..currencies.utils import convert_amount
+from .filters import TransactionFilter
 from .models import Transaction
+from .paginator import TransactionsPaginator
 from .serializers import TransactionSerializer
+
+logger = structlog.get_logger()
 
 
 class TransactionListView(generics.ListCreateAPIView):
@@ -17,13 +25,45 @@ class TransactionListView(generics.ListCreateAPIView):
 
     serializer_class = TransactionSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TransactionFilter
+    pagination_class = TransactionsPaginator
 
     def get_queryset(self):
         return Transaction.objects.filter(user=self.request.user).order_by(
             "-created_at"
         )
 
+    def list(self, request, *args, **kwargs):
+
+        user_id = self.request.user.id
+
+        # Build cache key. Include query params so pagination + filters work.
+        query_params = force_str(self.request.query_params.urlencode())
+        cache_key = f"user:{user_id}:transactions:{query_params}"
+
+        # try to get cached data
+        cached_data = cache.get(cache_key)
+
+        # if cached data, return it
+        if cached_data:
+            logger.info("Returning cached transactions")
+            return Response(cached_data)
+
+        # Otherwise normal DRF behaviour
+        response = super().list(request, *args, **kwargs)
+
+        logger.info("Caching query response")
+        # cache evaluated list
+        result = response.data
+
+        cache.set(cache_key, result, timeout=60)
+
+        return response
+
     def perform_create(self, serializer):
+
+        logger.info("trying to create a new trx with params")
 
         user = self.request.user
         transaction_type = self.request.data["transaction_type"]
@@ -128,6 +168,22 @@ class TransactionListView(generics.ListCreateAPIView):
             # update receviver
             if transaction_type == Transaction.TRANSACTION_TYPES[2][0]:
                 receiver_account.save()
+
+        # Invalidate all cached transaction lists for this user
+        self.invalidate_user_cache(self.request.user.id)
+
+    def invalidate_user_cache(self, user_id: int):
+        """
+        Remove ALL keys related to transaction list for this user.
+        Example keys:
+            user:7:transactions:
+            user:7:transactions?page=2
+            user:7:transactions?type=DEBIT
+        """
+        pattern = f"user:{user_id}:transactions:*"
+        keys = cache.keys(pattern)
+        if keys:
+            cache.delete_many(keys)
 
 
 class TransactionDetailView(generics.RetrieveAPIView):

@@ -1,0 +1,5 @@
+fastapi
+uvicorn[standard]
+aio-pika==9.5.8
+resend==2.19.0
+aiokafka==0.12.0

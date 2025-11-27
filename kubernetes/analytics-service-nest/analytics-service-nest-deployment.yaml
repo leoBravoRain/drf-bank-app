@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-service-nest
+  labels:
+    app: analytics-service-nest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analytics-service-nest
+  template:
+    metadata:
+      labels:
+        app: analytics-service-nest
+    spec:
+      containers:
+        - name: analytics-service-nest
+          image: analytics_service_nest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000          # NestJS default
+          resources:
+            requests:
+              cpu: 30m
+            limits:

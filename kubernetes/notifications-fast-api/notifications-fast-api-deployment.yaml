@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notifications-fast-api
+  labels:
+    app: notifications-fast-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: notifications-fast-api
+  template:
+    metadata:
+      labels:
+        app: notifications-fast-api
+    spec:
+      containers:
+        - name: notifications-fast-api
+          image: notifications-fast-api
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: RESEND_API_KEY
+              value: INSERT_HERE
